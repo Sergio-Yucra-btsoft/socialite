@@ -34,10 +34,8 @@
                                         Dashboard
                                     </a>
                                 @else
-                                    <a
-                                        href="/google-auth/redirect"
-                                        class="rounded-md px-3 py-2 text-black ring-1 ring-transparent transition hover:text-black/70 focus:outline-none focus-visible:ring-[#FF2D20]"
-                                    > SSO LOG </a>
+                                    <a href="{{ route('login.google') }}" class="btn btn-danger">Login with Google</a>
+
                                     <a
                                         href="{{ route('login') }}"
                                         class="rounded-md px-3 py-2 text-black ring-1 ring-transparent transition hover:text-black/70 focus:outline-none focus-visible:ring-[#FF2D20]"
