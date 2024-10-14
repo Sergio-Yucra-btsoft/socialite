@@ -26,9 +26,7 @@ class User extends Authenticatable
     protected $fillable = [
         'name',
         'email',
-        'password',
-        'google_id',
-        'facebook_id',
+        'password'
     ];
 
     /**
@@ -63,5 +61,10 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
         ];
+    }
+
+    public function socialAccounts()
+    {
+        return $this->hasMany(SocialAccount::class);
     }
 }

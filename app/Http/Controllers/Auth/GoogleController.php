@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Models\SocialAccount;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Laravel\Socialite\Facades\Socialite;
@@ -15,26 +16,36 @@ class GoogleController extends Controller
         return Socialite::driver('google')->redirect();
     }
 
-    public function handleGoogleCallback()
+    public function handleGoogleCallback(Request $request)
     {
+        dd($request);
         try {
-            $user = Socialite::driver('google')->user();
-            $finduser = User::where('google_id', $user->id)->first();
+            $googleUser = Socialite::driver('google')->user();
+            $socialAccount = SocialAccount::where('provider_name', 'google')
+                                          ->where('provider_id', $googleUser->id)
+                                          ->first();
 
-            if ($finduser) {
-                Auth::login($finduser);
-                return redirect()->intended('dashboard');
+            if ($socialAccount) {
+                $user = $socialAccount->user;
             } else {
-                $newUser = User::create([
-                    'name' => $user->name,
-                    'email' => $user->email,
-                    'google_id'=> $user->id,
-                    'password' => encrypt('123456dummy')
-                ]);
+                $user = User::where('email', $googleUser->email)->first();
 
-                Auth::login($newUser);
-                return redirect()->intended('dashboard');
+                if (!$user) {
+                    $user = User::create([
+                        'name' => $googleUser->name,
+                        'email' => $googleUser->email,
+                        'password' => encrypt('123456dummy')
+                    ]);
+                }
+
+                $user->socialAccounts()->create([
+                    'provider_name' => 'google',
+                    'provider_id' => $googleUser->id
+                ]);
             }
+
+            Auth::login($user);
+            return redirect()->intended('dashboard');
         } catch (\Exception $e) {
             dd($e->getMessage());
         }

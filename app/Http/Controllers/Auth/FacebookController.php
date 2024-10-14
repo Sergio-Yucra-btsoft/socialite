@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Models\SocialAccount;
 use Illuminate\Http\Request;
 use App\Models\User;
 use Illuminate\Support\Facades\Auth;
@@ -18,23 +19,32 @@ class FacebookController extends Controller
     public function handleFacebookCallback()
     {
         try {
-            $user = Socialite::driver('facebook')->user();
-            $finduser = User::where('facebook_id', $user->id)->first();
+            $facebookUser = Socialite::driver('facebook')->user();
+            $socialAccount = SocialAccount::where('provider_name', 'facebook')
+                                          ->where('provider_id', $facebookUser->id)
+                                          ->first();
 
-            if ($finduser) {
-                Auth::login($finduser);
-                return redirect()->intended('dashboard');
+            if ($socialAccount) {
+                $user = $socialAccount->user;
             } else {
-                $newUser = User::create([
-                    'name' => $user->name,
-                    'email' => $user->email,
-                    'facebook_id'=> $user->id,
-                    'password' => encrypt('123456dummy')
-                ]);
+                $user = User::where('email', $facebookUser->email)->first();
 
-                Auth::login($newUser);
-                return redirect()->intended('dashboard');
+                if (!$user) {
+                    $user = User::create([
+                        'name' => $facebookUser->name,
+                        'email' => $facebookUser->email,
+                        'password' => encrypt('123456dummy')
+                    ]);
+                }
+
+                $user->socialAccounts()->create([
+                    'provider_name' => 'facebook',
+                    'provider_id' => $facebookUser->id
+                ]);
             }
+
+            Auth::login($user);
+            return redirect()->intended('dashboard');
         } catch (\Exception $e) {
             dd($e->getMessage());
         }
